@@ -94,14 +94,21 @@ sleep 2 | timeout 10 btmgmt -i hci0 power on  >/dev/null || true
 bluetoothctl power on
 bluetoothctl pairable on
 bluetoothctl discoverable on
+# Power-cycling the adapter resets the device class to one WITHOUT the Audio bit (0x440414), which
+# makes phones hide the device in their scan list. Restore "Audio / Loudspeaker".
+# Adaptörü kapatıp açmak sınıfı Audio biti olmayan değere (0x440414) çevirir, telefonlar cihazı
+# listede göstermez. "Audio / Loudspeaker" sınıfını geri yazıyoruz.
+hciconfig hci0 class 0x240414 || true
+hciconfig hci0 name "__NAME__" || true
 exit 0
 EOF
+sed -i "s/__NAME__/$NAME/" /usr/local/bin/piwoofer-bt-setup
 chmod +x /usr/local/bin/piwoofer-bt-setup
 
 cat > /etc/systemd/system/piwoofer-bt.service <<EOF
 [Unit]
 Description=Piwoofer Bluetooth setup (PIN pairing, discoverable)
-After=bluetooth.service
+After=bluetooth.service bluealsa.service
 Requires=bluetooth.service
 [Service]
 Type=oneshot
