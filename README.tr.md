@@ -40,7 +40,7 @@ Fişe tak, telefonunu ya da laptopunu bir kere eşleştir, gerisi kendiliğinden
 2. Bu repoyu Pi'ye kopyala ve kurulum betiğini çalıştır:
 
    ```bash
-   git clone https://github.com/<kullanici>/piwoofer.git
+   git clone https://github.com/Omerteq/piwoofer.git
    cd piwoofer
    sudo PIN=1234 NAME=Piwoofer DISABLE_WIFI=1 ./scripts/install.sh
    ```
