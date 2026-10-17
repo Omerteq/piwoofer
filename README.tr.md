@@ -61,7 +61,7 @@ Fişe tak, telefonunu ya da laptopunu bir kere eşleştir, gerisi kendiliğinden
 | --- | --- | --- |
 | `PIN` | `0000` | Eşleşme PIN'i. **Değiştir.** |
 | `NAME` | `Piwoofer` | Bluetooth cihaz adı |
-| `ALSA_CARD` | `Headphones` | `aplay -l` çıktısındaki çıkış kartı (3.5 mm jack = `Headphones`) |
+| `ALSA_CARD` | `Headphones` | `aplay -l` çıktısındaki çıkış kartı (3.5 mm jack = `Headphones`). USB DAC: denenmedi, [aşağıya bak](#diğer-ses-kartları-usb-dac---denenmedi) |
 | `VOLUME` | `90%` | Açılıştaki analog çıkış seviyesi (telefondaki ses bunun üstüne çalışır) |
 | `BUFFER_US` | `100000` | Çalma tamponu (mikrosaniye). Düşük = az gecikme, cızırtı riski. |
 | `PERIOD_US` | `25000` | Çalma periyodu (mikrosaniye) |
@@ -86,7 +86,34 @@ Sadece sesi geçici (reboot'a kadar) değiştirmek için `amixer -c 0 sset PCM 8
 
 ## Gecikme
 
-Bluetooth A2DP (SBC kodeği) her zaman yaklaşık 100-200 ms gecikme ekler. Çoğu video oynatıcı bunu otomatik telafi eder. Piwoofer kendi tamponunu BlueALSA varsayılanı olan 500 ms'den 100 ms'ye düşürür. Videoda hâlâ gecikme varsa `BUFFER_US` değerini düşür (örneğin `60000`) ya da 3.5 mm jack yerine USB DAC dene.
+Bluetooth A2DP (SBC kodeği) her zaman yaklaşık 100-200 ms gecikme ekler. Çoğu video oynatıcı bunu otomatik telafi eder. Piwoofer kendi tamponunu BlueALSA varsayılanı olan 500 ms'den 100 ms'ye düşürür. Videoda hâlâ gecikme varsa `BUFFER_US` değerini düşür (örneğin `60000`) ya da 3.5 mm jack yerine USB DAC dene (denenmedi, aşağıya bak).
+
+## Diğer ses kartları (USB DAC) - denenmedi
+
+Piwoofer sadece Raspberry Pi'nin **3.5 mm jack**'iyle yapıldı ve test edildi. USB DAC ya da DAC HAT gibi diğer ALSA ses kartları teoride çalışmalı, ama henüz kimse denemedi.
+
+**Elle denemek**
+
+```bash
+aplay -l                                   # kart adını bul, örn. "card 1: Device [USB Audio Device]" -> Device
+sudo ALSA_CARD=Device PIN=1234 ./scripts/install.sh
+```
+
+**Açılıştaki ses ayarı başka kartlarda neden hata verebilir**
+
+Ses seviyesi doğrudan ses çipinde, bir "mixer kontrolü" ile ayarlanır ve her çip kontrollerine farklı isim verir. Pi'nin jack'i `PCM` adında tek bir kontrol sunar, kurulum da `amixer -c 0 sset PCM 90%` komutunu çalıştırır. Bir USB DAC'te bu kontrol `Speaker`, `Headphone`, `Master` ya da `Digital` adında olabilir, hiç donanım ses kontrolü olmayabilir ve kart numarası 0 olmayabilir.
+
+Kartında `PCM` yoksa `piwoofer-volume` servisi açılışta hata verir. **Ses yine çalar**, çünkü bu adım sadece başlangıç seviyesini ayarlar; telefondaki ses çubuğu BlueALSA'nın yazılım ses kontrolünü kullanır ve buna bağlı değildir. Kartının hangi kontrolleri sunduğunu görmek için: `amixer -c <kart numarası> scontrols`.
+
+**Katkılar memnuniyetle karşılanır**
+
+USB DAC'in ya da başka bir ses kartın varsa yardım edebilirsin:
+
+- **Bildir:** `aplay -l` çıktını, `amixer -c <n> scontrols` çıktını, DAC'in hangisi olduğunu ve sesin çalışıp çalışmadığını yazarak bir issue aç.
+- **Düzelt:** `scripts/install.sh` içindeki `piwoofer-volume` adımını, sabit `-c 0 ... PCM` yerine seçilen `ALSA_CARD` kartını kullanacak ve kontrol yoksa sessizce geçecek şekilde düzelten bir pull request gönder.
+- **Sonra:** Birkaç kartın çalıştığı doğrulanınca otomatik kart algılama eklenebilir.
+
+Git'i iyi bilmen gerekmez: çıktılarınla açılmış bir issue bile büyük yardımdır. Kod değişikliği için repoyu fork'la, bir branch aç ve pull request gönder.
 
 ## Sorun giderme
 

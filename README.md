@@ -61,7 +61,7 @@ Plug it in, pair your phone or laptop once, and it just works. Pulling the plug 
 | --- | --- | --- |
 | `PIN` | `0000` | Pairing PIN. **Change it.** |
 | `NAME` | `Piwoofer` | Bluetooth device name |
-| `ALSA_CARD` | `Headphones` | Output card from `aplay -l` (3.5 mm jack = `Headphones`) |
+| `ALSA_CARD` | `Headphones` | Output card from `aplay -l` (3.5 mm jack = `Headphones`). USB DAC: untested, see [below](#other-sound-cards-usb-dac---untested) |
 | `VOLUME` | `90%` | Analog output level at boot (the phone controls volume on top of it) |
 | `BUFFER_US` | `100000` | Playback buffer in microseconds. Lower = less latency, more risk of crackle. |
 | `PERIOD_US` | `25000` | Playback period in microseconds |
@@ -86,7 +86,34 @@ To change only the volume or buffer temporarily (until reboot), use `amixer -c 0
 
 ## Latency
 
-Bluetooth A2DP (SBC codec) always adds roughly 100-200 ms. Most video players compensate automatically. Piwoofer reduces its own buffer from the BlueALSA default (500 ms) to 100 ms. If audio still lags in videos, lower `BUFFER_US` (for example `60000`), or try a USB DAC instead of the 3.5 mm jack.
+Bluetooth A2DP (SBC codec) always adds roughly 100-200 ms. Most video players compensate automatically. Piwoofer reduces its own buffer from the BlueALSA default (500 ms) to 100 ms. If audio still lags in videos, lower `BUFFER_US` (for example `60000`), or try a USB DAC instead of the 3.5 mm jack (untested, see below).
+
+## Other sound cards (USB DAC) - untested
+
+Piwoofer was built and tested only with the Raspberry Pi's **3.5 mm jack**. Other ALSA sound cards, such as a USB DAC or a DAC HAT, should work in theory, but nobody has tried them yet.
+
+**Trying it by hand**
+
+```bash
+aplay -l                                   # find your card name, e.g. "card 1: Device [USB Audio Device]" -> Device
+sudo ALSA_CARD=Device PIN=1234 ./scripts/install.sh
+```
+
+**Why the boot volume step may fail on other cards**
+
+Volume is set on the sound chip itself through a "mixer control", and every chip names its controls differently. The Pi's jack exposes one control called `PCM`, and the installer runs `amixer -c 0 sset PCM 90%`. A USB DAC may call it `Speaker`, `Headphone`, `Master` or `Digital`, may have no hardware volume at all, and may not be card number 0.
+
+If `PCM` does not exist on your card, the `piwoofer-volume` service reports an error at boot. **Audio still plays**, because that step only sets the starting level; the volume slider on your phone uses BlueALSA's software volume and does not depend on it. To see what your card offers: `amixer -c <card number> scontrols`.
+
+**Contributions welcome**
+
+If you have a USB DAC or another sound card, you can help:
+
+- **Report:** open an issue with your `aplay -l` output, the `amixer -c <n> scontrols` output, which DAC it is, and whether audio worked.
+- **Fix:** send a pull request that makes the `piwoofer-volume` step in `scripts/install.sh` use the selected `ALSA_CARD` instead of a fixed `-c 0 ... PCM`, and skip quietly when the control does not exist.
+- **Later:** once a few cards are confirmed, automatic card detection can be added.
+
+You do not need to know Git well: an issue with your outputs is already a big help. For code changes, fork the repo, make a branch, and open a pull request.
 
 ## Troubleshooting
 
